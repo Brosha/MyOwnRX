@@ -4,10 +4,12 @@ import org.example.interfaces.Disposable;
 import org.example.interfaces.Emitter;
 import org.example.interfaces.Observer;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 class DefaultEmitter<T> implements Emitter<T>, Disposable {
     private final Observer<T> observer;
     private Disposable disposable;
-    private volatile boolean disposed = false;
+    private final AtomicBoolean disposed = new AtomicBoolean(false);
 
     public DefaultEmitter(Observer<T> observer) {
         this.observer = observer;
@@ -15,14 +17,14 @@ class DefaultEmitter<T> implements Emitter<T>, Disposable {
 
     @Override
     public void onNext(T value) {
-        if (!isDisposed()) { // Используем метод isDisposed()
+        if (!disposed.get()) {
             observer.onNext(value);
         }
     }
 
     @Override
     public void onError(Throwable error) {
-        if (!disposed) {
+        if (!disposed.get()) {
             observer.onError(error);
             dispose();
         }
@@ -30,7 +32,7 @@ class DefaultEmitter<T> implements Emitter<T>, Disposable {
 
     @Override
     public void onComplete() {
-        if (!disposed) {
+        if (!disposed.get()) {
             observer.onComplete();
             dispose();
         }
@@ -43,14 +45,11 @@ class DefaultEmitter<T> implements Emitter<T>, Disposable {
 
     @Override
     public void dispose() {
-        disposed = true;
-        if (disposable != null) {
-            disposable.dispose();
-        }
+        disposed.set(true);
     }
 
     @Override
     public boolean isDisposed() {
-        return disposed;
+        return disposed.get();
     }
 }
